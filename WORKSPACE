@@ -154,11 +154,11 @@ http_archive(
     sha256 = "5ba6d0db4e784621fda44a50c58bb23b0892684692f0c623e2063f9c19f192f1"
 )
 
-new_local_repository(
-    name = "linux_opencv",
-    build_file = "@//third_party:opencv_linux.BUILD",
-    path = "/usr",
-)
+# new_local_repository(
+#     name = "linux_opencv",
+#     build_file = "@//third_party:opencv_linux.BUILD",
+#     path = "/usr",
+# )
 
 new_local_repository(
     name = "linux_ffmpeg",
@@ -298,4 +298,11 @@ maven_install(
     ],
     fetch_sources = True,
     version_conflict_policy = "pinned",
+)
+
+
+new_local_repository(
+    name = "linux_opencv",
+    build_file = "@//third_party:opencv_linux.BUILD",
+    path = "/usr/local",
 )
