@@ -212,7 +212,7 @@ node {
       # CollectionHsMinSizeCalculatorOptions in
       # mediapipe/graphs/hand_tracking/multi_hand_tracking_mobile.pbtxt and
       # mediapipe/graphs/hand_tracking/multi_hand_tracking_desktop_live.pbtxt.
-      max_vec_size: 2
+      max_vec_size: 8
     }
   }
 }
