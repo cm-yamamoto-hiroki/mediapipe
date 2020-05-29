@@ -78,6 +78,7 @@ cc_library(
         "//mediapipe/graphs/hand_tracking/subgraphs:multi_hand_detection_cpu",
         "//mediapipe/graphs/hand_tracking/subgraphs:multi_hand_landmark_cpu",
         "//mediapipe/graphs/hand_tracking/subgraphs:multi_hand_renderer_cpu",
+        "//mediapipe/calculators/core:pass_through_calculator",
     ],
 )
 

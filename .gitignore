@@ -1,6 +1,7 @@
 mediapipe/provisioning_profile.mobileprovision
 bazel-bin
 bazel-genfiles
+bazel-mediapipe
 bazel-mediapipe-ioss
 bazel-out
 bazel-testlogs
@@ -8,5 +9,6 @@ mediapipe/MediaPipe.xcodeproj
 mediapipe/MediaPipe.tulsiproj/*.tulsiconf-user
 
 result
-
 .vscode
+
+*.pyc
