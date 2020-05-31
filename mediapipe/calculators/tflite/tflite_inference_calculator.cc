@@ -570,6 +570,11 @@ REGISTER_CALCULATOR(TfLiteInferenceCalculator);
       TfLiteTensor* tensor = interpreter_->tensor(tensor_indexes[i]);
       output_tensors->emplace_back(*tensor);
     }
+    for(auto& output_tensor : *output_tensors){
+      auto ptr = malloc(output_tensor.bytes);
+      std::memcpy(ptr, (void*)output_tensor.data.uint8, output_tensor.bytes);
+      output_tensor.data.uint8 = (uint8*) ptr;
+    }
     cc->Outputs()
         .Tag(kTensorsTag)
         .Add(output_tensors.release(), cc->InputTimestamp());
