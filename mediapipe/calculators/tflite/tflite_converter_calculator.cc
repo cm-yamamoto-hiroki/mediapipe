@@ -215,7 +215,7 @@ REGISTER_CALCULATOR(TfLiteConverterCalculator);
   }
 
   // Assign this calculator's default InputStreamHandler.
-  cc->SetInputStreamHandler("FixedSizeInputStreamHandler");
+  cc->SetInputStreamHandler("DefaultInputStreamHandler");
 
   return ::mediapipe::OkStatus();
 }
@@ -388,6 +388,11 @@ REGISTER_CALCULATOR(TfLiteConverterCalculator);
 
     auto output_tensors = absl::make_unique<std::vector<TfLiteTensor>>();
     output_tensors->emplace_back(*tensor);
+    for(auto& output_tensor : *output_tensors){
+      auto ptr = malloc(output_tensor.bytes);
+      std::memcpy(ptr, (void*)output_tensor.data.uint8, output_tensor.bytes);
+      output_tensor.data.uint8 = (uint8*) ptr;
+    }
     cc->Outputs()
         .Tag(kTensorsTag)
         .Add(output_tensors.release(), cc->InputTimestamp());
