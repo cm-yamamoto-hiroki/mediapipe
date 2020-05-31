@@ -321,7 +321,7 @@ REGISTER_CALCULATOR(TfLiteInferenceCalculator);
   }
 
   // Assign this calculator's default InputStreamHandler.
-  cc->SetInputStreamHandler("FixedSizeInputStreamHandler");
+  cc->SetInputStreamHandler("DefaultInputStreamHandler");
 
   return ::mediapipe::OkStatus();
 }
