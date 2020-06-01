@@ -38,6 +38,7 @@ constexpr char kInputStream[] = "input_video";
 constexpr char kOutputVideo[] = "output_video";
 constexpr char kOutputDetections[] = "output_detections";
 constexpr char kOutputLandmarks[] = "output_landmarks";
+constexpr char kOutputLandmarksRaw[] = "output_landmarks_raw";
 constexpr char kOutputPalmRects[] = "output_palm_rects";
 constexpr char kOutputHandRects[] = "output_hand_rects";
 constexpr char kOutputHandRectsFromLandmarks[] = "output_hand_rects_from_landmarks";
@@ -102,6 +103,8 @@ DEFINE_string(output_video_path, "",
                    graph.AddOutputStreamPoller(kOutputHandRects));
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_hand_rects_from_landmarks,
                    graph.AddOutputStreamPoller(kOutputHandRectsFromLandmarks));
+  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks_raw,
+                   graph.AddOutputStreamPoller(kOutputLandmarksRaw));
 
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
@@ -297,6 +300,28 @@ DEFINE_string(output_video_path, "",
 
         std::string serializedStr;
         output_hand_rects_from_landmarks[j].SerializeToString(&serializedStr);
+        outputfile << serializedStr << std::flush;
+      }
+    }
+
+    if(poller_landmarks_raw.QueueSize() > 0){
+      mediapipe::Packet packet_landmarks_raw;
+      if(!poller_landmarks_raw.Next(&packet_landmarks_raw)) break;
+      
+      auto &output_landmarks_raw = packet_landmarks_raw.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
+
+      // output file
+      for (int j = 0; j < output_landmarks_raw.size(); j++)
+      {
+        std::ostringstream os;
+        os << output_dirpath + "/"
+          << "iLoop=" << iLoop << "_"
+          << "landmarkRaw_"
+          << "j=" << j << ".txt";
+        std::ofstream outputfile(os.str());
+
+        std::string serializedStr;
+        output_landmarks_raw[j].SerializeToString(&serializedStr);
         outputfile << serializedStr << std::flush;
       }
     }
