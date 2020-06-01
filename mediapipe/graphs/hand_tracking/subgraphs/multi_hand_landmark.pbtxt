@@ -67,7 +67,7 @@ node {
 }
 
 node {
-  calculator: "EndLoopLandmarkListVector"
+  calculator: "EndLoopLandmarkListVectorCalculator"
   input_stream: "ITEM:single_hand_landmarks_raw"
   input_stream: "BATCH_END:single_hand_rect_timestamp"
   output_stream: "ITERABLE:multi_hand_landmarks_raw"
