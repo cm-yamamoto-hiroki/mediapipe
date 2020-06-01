@@ -11,6 +11,7 @@ output_stream: "output_landmarks"
 output_stream: "output_palm_rects"
 output_stream: "output_hand_rects"
 output_stream: "output_hand_rects_from_landmarks"
+output_stream: "LANDMARKS_RAW:multi_hand_landmarks_raw"
 
 # Determines if an input vector of NormalizedRect has a size greater than or
 # equal to the provided min_size.
@@ -60,6 +61,7 @@ node {
   input_stream: "NORM_RECTS:multi_hand_rects"
   output_stream: "LANDMARKS:multi_hand_landmarks"
   output_stream: "NORM_RECTS:multi_hand_rects_from_landmarks"
+  output_stream: "LANDMARKS_RAW:multi_hand_landmarks_raw"
 }
 
 # Caches a hand rectangle fed back from MultiHandLandmarkSubgraph, and upon the
@@ -137,9 +139,3 @@ node {
   input_stream: "multi_hand_rects_from_landmarks"
   output_stream: "output_hand_rects_from_landmarks"
 }
-
-
-
-
-
-
