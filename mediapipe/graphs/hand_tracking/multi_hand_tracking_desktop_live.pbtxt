@@ -6,12 +6,12 @@
 # Images coming into and out of the graph.
 input_stream: "input_video"
 output_stream: "output_video"
-output_stream: "output_detections"
-output_stream: "output_landmarks"
-output_stream: "output_palm_rects"
-output_stream: "output_hand_rects"
-output_stream: "output_hand_rects_from_landmarks"
-output_stream: "LANDMARKS_RAW:multi_hand_landmarks_raw"
+output_stream: "output_detections:multi_palm_detections"
+output_stream: "output_landmarks:multi_hand_landmarks"
+output_stream: "output_palm_rects:multi_palm_rects"
+output_stream: "output_hand_rects:multi_hand_rects"
+output_stream: "output_hand_rects_from_landmarks:multi_hand_rects_from_landmarks"
+output_stream: "output_landmarks_raw:multi_hand_landmarks_raw"
 
 # Determines if an input vector of NormalizedRect has a size greater than or
 # equal to the provided min_size.
@@ -107,35 +107,4 @@ node {
   input_stream: "NORM_RECTS:0:multi_palm_rects"
   input_stream: "NORM_RECTS:1:multi_hand_rects"
   output_stream: "IMAGE:output_video"
-}
-
-node {
-  calculator: "PassThroughCalculator"
-  input_stream: "multi_palm_detections"
-  output_stream: "output_detections"
-}
-
-node {
-  calculator: "PassThroughCalculator"
-  input_stream: "multi_hand_landmarks"
-  output_stream: "output_landmarks"
-}
-
-
-node {
-  calculator: "PassThroughCalculator"
-  input_stream: "multi_palm_rects"
-  output_stream: "output_palm_rects"
-}
-
-node {
-  calculator: "PassThroughCalculator"
-  input_stream: "multi_hand_rects"
-  output_stream: "output_hand_rects"
-}
-
-node {
-  calculator: "PassThroughCalculator"
-  input_stream: "multi_hand_rects_from_landmarks"
-  output_stream: "output_hand_rects_from_landmarks"
 }
