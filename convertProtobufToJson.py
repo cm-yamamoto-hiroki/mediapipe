@@ -42,6 +42,11 @@ handRectFromLandmarksFiles = [(re.findall(
 handRectFromLandmarksFilesFiltered = [
     (handRectFromLandmarksFile[0], handRectFromLandmarksFile[1].replace("\\", "/")) for handRectFromLandmarksFile in handRectFromLandmarksFiles if handRectFromLandmarksFile[0]]
 
+landmarkRawFiles = [(re.findall(
+    r"iLoop=(\d+)_landmarkRaw_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
+landmarkRawFilesFiltered = [
+    (landmarkRawFile[0], landmarkRawFile[1].replace("\\", "/")) for landmarkRawFile in landmarkRawFiles if landmarkRawFile[0]]
+
 for detectionFile in detectionFilesFiltered:
     with open(detectionFile[1], "rb") as f:
         content = f.read()
@@ -105,5 +110,16 @@ for handRectFromLandmarksFile in handRectFromLandmarksFilesFiltered:
     with open(handRectFromLandmarksFileOutput, "w") as f:
         f.write(jsonObj) 
 
+for landmarkRawFile in landmarkRawFilesFiltered:
+    with open(landmarkRawFile[1], "rb") as f:
+        content = f.read()
+
+    landmarkRaw = LandmarkList()
+    landmarkRaw.ParseFromString(content)
+    jsonObj = MessageToJson(landmarkRaw)
+
+    landmarkRawFileOutput = landmarkRawFile[1].replace("txt", "json")
+    with open(landmarkRawFileOutput, "w") as f:
+        f.write(jsonObj) 
 
 

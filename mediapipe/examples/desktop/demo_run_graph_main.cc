@@ -36,12 +36,12 @@
 
 constexpr char kInputStream[] = "input_video";
 constexpr char kOutputVideo[] = "output_video";
-constexpr char kOutputDetections[] = "output_detections";
-constexpr char kOutputLandmarks[] = "output_landmarks";
-constexpr char kOutputLandmarksRaw[] = "output_landmarks_raw";
-constexpr char kOutputPalmRects[] = "output_palm_rects";
-constexpr char kOutputHandRects[] = "output_hand_rects";
-constexpr char kOutputHandRectsFromLandmarks[] = "output_hand_rects_from_landmarks";
+constexpr char kOutputDetections[] = "multi_palm_detections";
+constexpr char kOutputLandmarks[] = "multi_hand_landmarks";
+constexpr char kOutputPalmRects[] = "multi_palm_rects";
+constexpr char kOutputHandRects[] = "multi_hand_rects";
+constexpr char kOutputHandRectsFromLandmarks[] = "multi_hand_rects_from_landmarks";
+constexpr char kOutputLandmarksRaw[] = "multi_hand_landmarks_raw";
 constexpr char kWindowName[] = "MediaPipe";
 
 DEFINE_string(
