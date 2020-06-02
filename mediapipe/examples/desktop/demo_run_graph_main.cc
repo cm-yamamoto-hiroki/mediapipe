@@ -308,7 +308,7 @@ DEFINE_string(output_video_path, "",
       mediapipe::Packet packet_landmarks_raw;
       if(!poller_landmarks_raw.Next(&packet_landmarks_raw)) break;
       
-      auto &output_landmarks_raw = packet_landmarks_raw.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
+      auto &output_landmarks_raw = packet_landmarks_raw.Get<std::vector<mediapipe::LandmarkList>>();
 
       // output file
       for (int j = 0; j < output_landmarks_raw.size(); j++)

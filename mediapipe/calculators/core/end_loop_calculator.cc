@@ -46,7 +46,7 @@ REGISTER_CALCULATOR(EndLoopClassificationListCalculator);
 typedef EndLoopCalculator<std::vector<TfLiteTensor>> EndLoopTensorCalculator;
 REGISTER_CALCULATOR(EndLoopTensorCalculator);
 
-typedef EndLoopCalculator<std::vector<::mediapipe::NormalizedLandmarkList>>
+typedef EndLoopCalculator<std::vector<::mediapipe::LandmarkList>>
     EndLoopLandmarkListVectorCalculator;
 REGISTER_CALCULATOR(EndLoopLandmarkListVectorCalculator);
 
