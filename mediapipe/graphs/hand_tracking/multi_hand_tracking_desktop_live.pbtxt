@@ -5,12 +5,13 @@
 
 # Images coming into and out of the graph.
 input_stream: "input_video"
-output_stream: "output_video"
-output_stream: "output_detections:multi_palm_detections"
-output_stream: "output_landmarks:multi_hand_landmarks"
-output_stream: "output_palm_rects:multi_palm_rects"
-output_stream: "output_hand_rects:multi_hand_rects"
-output_stream: "output_hand_rects_from_landmarks:multi_hand_rects_from_landmarks"
+output_stream: "VIDEOS:output_video"
+output_stream: "DETECTIONS:multi_palm_detections"
+output_stream: "LANDMARKS:multi_hand_landmarks"
+output_stream: "PALMRECTS:multi_palm_rects"
+output_stream: "HANDRECTS:multi_hand_rects"
+output_stream: "HANDRECTS_FROM_LANDMARKS:multi_hand_rects_from_landmarks"
+output_stream: "LANDMARKS_RAW:multi_hand_landmarks_raw"
 
 # Determines if an input vector of NormalizedRect has a size greater than or
 # equal to the provided min_size.
@@ -60,6 +61,7 @@ node {
   input_stream: "NORM_RECTS:multi_hand_rects"
   output_stream: "LANDMARKS:multi_hand_landmarks"
   output_stream: "NORM_RECTS:multi_hand_rects_from_landmarks"
+  output_stream: "LANDMARKS_RAW:multi_hand_landmarks_raw"
 }
 
 # Caches a hand rectangle fed back from MultiHandLandmarkSubgraph, and upon the

@@ -9,6 +9,7 @@ output_stream: "NORM_RECT:hand_rect_for_next_frame"
 output_stream: "PRESENCE:hand_presence"
 output_stream: "PRESENCE_SCORE:hand_presence_score"
 output_stream: "HANDEDNESS:handedness"
+output_stream: "LANDMARKS_RAW:landmarks_raw"
 
 # Crops the rectangle that contains a hand from the input image.
 node {
@@ -135,6 +136,7 @@ node {
   calculator: "TfLiteTensorsToLandmarksCalculator"
   input_stream: "TENSORS:landmark_tensors"
   output_stream: "NORM_LANDMARKS:landmarks"
+  output_stream: "LANDMARKS:landmarks_raw"
   node_options: {
     [type.googleapis.com/mediapipe.TfLiteTensorsToLandmarksCalculatorOptions] {
       num_landmarks: 21
