@@ -1,68 +1,60 @@
-import sys
-from os import path
 import os
 import subprocess
-
 import sys
 import shutil
 
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_bone/converted/iPhoneXR_overshelf.mp4"
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_handtracking/WIN_20200515_16_11_51_Pro.mp4"
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_handtracking/WIN_20200515_16_13_33_Pro.mp4"
-INPUTVIDEOPATHs = [
-    "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_24.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_49.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_53.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_55.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_87.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/WIN_20200515_16_11_51_Pro_ss_19.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/WIN_20200515_16_13_33_Pro_ss_24.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_bone/converted/iPhoneXR_overshelf_scene1_short.mp4",
-]
+from pprint import pprint
+from scripts import convertProtobufToJson
 
-
-
-def doMultiHandTracking(inputVideoPath):
-    dirname = path.dirname(inputVideoPath)
-    basename = path.basename(inputVideoPath)
-    outputDir = inputVideoPath.replace(".mp4", "-mp4")
-
-    if not path.exists(outputDir):
-        os.makedirs(outputDir)
-
+def multi_hand_track(input_video_path, input_basename,  output_dir):
     command = " ".join([
-        # f'GLOG_logtostderr=1 \\',
-        f'./bazel-bin/mediapipe/examples/desktop/multi_hand_tracking/multi_hand_tracking_cpu',
-        f'--calculator_graph_config_file="./mediapipe/graphs/hand_tracking/multi_hand_tracking_desktop_live.pbtxt"',
-        f'--input_video_path="{inputVideoPath}"',
-        f'--output_video_path="{outputDir}/{basename}"',
-        f'> "{outputDir}/result.txt"',
+        f'/usr/local/bazel/2.0.0/lib/bazel/bin/bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
     ])
     res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
 
-    command2 = " ".join([
-        f'python3 convertProtobufToJson.py ./result/{basename}',
-    ])
-    res = subprocess.run(command2, stderr=subprocess.STDOUT, shell=True)
+    if os.path.exists(f"{output_dir}/result"):
+        shutil.rmtree(f"{output_dir}/result")
 
-    shutil.copy2(f"{outputDir}/{basename}", f"{outputDir}/video.mp4")
-    if os.path.exists(f"{outputDir}/result"):
-        shutil.rmtree(f"{outputDir}/result")
-    shutil.copytree(f"./result/{basename}", f"{outputDir}/result")
+    command_options = [
+        f'./bazel-bin/mediapipe/examples/desktop/multi_hand_tracking/multi_hand_tracking_cpu',
+        f'  --calculator_graph_config_file="./mediapipe/graphs/hand_tracking/multi_hand_tracking_desktop_live.pbtxt"',
+        f'  --input_video_path="{input_video_path}"',
+        f'  --output_video_path="{output_dir}/{input_basename}"',
+        f'> "{output_dir}/result.txt"',
+    ]
+    pprint(command_options)
+
+    command = " ".join(command_options)
+    res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
+
+
+def doMultiHandTracking(input_video_path):
+    input_dir = os.path.dirname(input_video_path)
+    input_basename = os.path.basename(input_video_path)
+    output_dir = input_video_path.replace(".mp4", "-mp4")
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    multi_hand_track(input_video_path, input_basename, output_dir)
+
+    print("convert protobuf files")
+    convertProtobufToJson.convertFilesInDir(f"{output_dir}/result/")
+
+    shutil.copy2(f"{output_dir}/{input_basename}", f"{output_dir}/video.mp4")
+
+    os.makedirs(f"{input_dir}/handtracked/", exist_ok=True)
+    shutil.copy2(f"{output_dir}/{input_basename}", f"{input_dir}/handtracked/{input_basename}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        inputVideoPaths = [sys.argv[1]]
+        input_video_path = sys.argv[1]
     else:
-        inputVideoPaths = INPUTVIDEOPATHs
+        print("usage: python multi_hand_tracking.py PATH_TO_VIDEOFILE")
+        sys.exit(1)
 
-    command = " ".join([
-        f'bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
-    ])
-    res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
+    print(input_video_path)
 
-    for inputVideoPath in inputVideoPaths:
-        print(inputVideoPath)
-        doMultiHandTracking(inputVideoPath)
+    doMultiHandTracking(input_video_path)
 

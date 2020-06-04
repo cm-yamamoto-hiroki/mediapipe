@@ -494,11 +494,13 @@ REGISTER_CALCULATOR(TfLiteInferenceCalculator);
         uint8* local_tensor_buffer = interpreter_->typed_input_tensor<uint8>(i);
         std::memcpy(local_tensor_buffer, input_tensor_buffer,
                     input_tensor->bytes);
+        std::free((void*)input_tensor_buffer);
       } else {
         const float* input_tensor_buffer = input_tensor->data.f;
         float* local_tensor_buffer = interpreter_->typed_input_tensor<float>(i);
         std::memcpy(local_tensor_buffer, input_tensor_buffer,
                     input_tensor->bytes);
+        std::free((void*)input_tensor_buffer);
       }
     }
   }
