@@ -63,7 +63,7 @@ def bendness(wrist_point, finger_points):
     return bendness
 
 
-finger_bone_indexes = [
+FINGER_BONE_INDEXES = [
     (
         (0, i*4 + 1),
         (i*4 + 1, i*4 + 2),
@@ -83,7 +83,7 @@ def hand_info(landmark):
             )
             for bone0, bone1 in zip(finger_bones, finger_bones[1:])
         ]
-        for finger_bones in finger_bone_indexes
+        for finger_bones in FINGER_BONE_INDEXES
     ]
 
     tip_distances = [
@@ -133,8 +133,9 @@ def hand_info(landmark):
 def readLandmarkJsonFile(filepath):
     with open(filepath, "r") as f:
         content = f.read()
-
+    
     landmark_json = json.loads(content)
     landmark = landmark_json["landmark"]
+
     return landmark
 
