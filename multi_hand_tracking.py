@@ -4,7 +4,7 @@ import sys
 import shutil
 
 from pprint import pprint
-
+from scripts import convertProtobufToJson
 
 def multi_hand_track(input_video_path, input_basename,  output_dir):
     # command = " ".join([
@@ -28,15 +28,6 @@ def multi_hand_track(input_video_path, input_basename,  output_dir):
     res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
 
 
-def convert_protobuf_files(output_dir):
-    command = " ".join([
-        f'python3 convertProtobufToJson.py "{output_dir}/result/"',
-    ])
-    print(command)
-
-    res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)    
-
-
 def doMultiHandTracking(input_video_path):
     input_dir = os.path.dirname(input_video_path)
     input_basename = os.path.basename(input_video_path)
@@ -47,7 +38,8 @@ def doMultiHandTracking(input_video_path):
 
     multi_hand_track(input_video_path, input_basename, output_dir)
 
-    convert_protobuf_files(output_dir)
+    print("convert protobuf files")
+    convertProtobufToJson.convertFilesInDir(f"{output_dir}/result/")
 
     shutil.copy2(f"{output_dir}/{input_basename}", f"{output_dir}/video.mp4")
 
