@@ -6,20 +6,7 @@ import subprocess
 import sys
 import shutil
 
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_bone/converted/iPhoneXR_overshelf.mp4"
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_handtracking/WIN_20200515_16_11_51_Pro.mp4"
-# INPUTVIDEOPATH = "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_handtracking/WIN_20200515_16_13_33_Pro.mp4"
-INPUTVIDEOPATHs = [
-    "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_24.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_49.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_53.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_55.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/iPhoneXR_overshelf_ss_87.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/WIN_20200515_16_11_51_Pro_ss_19.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200527 two people/converted/WIN_20200515_16_13_33_Pro_ss_24.mp4",
-    # "/mnt/c/Users/yamamoto.hiroki/Desktop/log/20200515 Multi Hand Tracking/cafe_test_bone/converted/iPhoneXR_overshelf_scene1_short.mp4",
-]
-
+from pprint import pprint
 
 
 def doMultiHandTracking(inputVideoPath):
@@ -30,39 +17,45 @@ def doMultiHandTracking(inputVideoPath):
     if not path.exists(outputDir):
         os.makedirs(outputDir)
 
-    command = " ".join([
-        # f'GLOG_logtostderr=1 \\',
+    if os.path.exists(f"{outputDir}/result"):
+        shutil.rmtree(f"{outputDir}/result")
+
+    command_options = [
         f'./bazel-bin/mediapipe/examples/desktop/multi_hand_tracking/multi_hand_tracking_cpu',
-        f'--calculator_graph_config_file="./mediapipe/graphs/hand_tracking/multi_hand_tracking_desktop_live.pbtxt"',
-        f'--input_video_path="{inputVideoPath}"',
-        f'--output_video_path="{outputDir}/{basename}"',
+        f'  --calculator_graph_config_file="./mediapipe/graphs/hand_tracking/multi_hand_tracking_desktop_live.pbtxt"',
+        f'  --input_video_path="{inputVideoPath}"',
+        f'  --output_video_path="{outputDir}/{basename}"',
         f'> "{outputDir}/result.txt"',
-    ])
+    ]
+    pprint(command_options)
+    command = " ".join(command_options)
     res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
 
     command2 = " ".join([
-        f'python3 convertProtobufToJson.py ./result/{basename}',
+        f'python3 convertProtobufToJson.py "{outputDir}/result/"',
     ])
+    print(command2)
     res = subprocess.run(command2, stderr=subprocess.STDOUT, shell=True)
 
     shutil.copy2(f"{outputDir}/{basename}", f"{outputDir}/video.mp4")
-    if os.path.exists(f"{outputDir}/result"):
-        shutil.rmtree(f"{outputDir}/result")
-    shutil.copytree(f"./result/{basename}", f"{outputDir}/result")
+
+    os.makedirs(f"{dirname}/handtracked/", exist_ok=True)
+    shutil.copy2(f"{outputDir}/{basename}", f"{dirname}/handtracked/{basename}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        inputVideoPaths = [sys.argv[1]]
+        inputVideoPaths = sys.argv[1]
     else:
-        inputVideoPaths = INPUTVIDEOPATHs
+        print("usage: python multi_hand_tracking.py PATH_TO_VIDEOFILE")
+        sys.exit(1)
 
-    command = " ".join([
-        f'bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
-    ])
-    res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
+    print(inputVideoPath)
 
-    for inputVideoPath in inputVideoPaths:
-        print(inputVideoPath)
-        doMultiHandTracking(inputVideoPath)
+    # command = " ".join([
+    #     f'bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
+    # ])
+    # res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
+
+    doMultiHandTracking(inputVideoPath)
 
