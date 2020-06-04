@@ -113,11 +113,13 @@ DEFINE_string(output_video_path, "",
 
   int iLoop = 0;
 
-  // difine output folder path
+  // define output folder path
+  std::string output_dirname = FLAGS_output_video_path.substr(0, FLAGS_output_video_path.rfind("/"));
   std::string output_filename = FLAGS_output_video_path.substr(FLAGS_output_video_path.rfind("/") + 1);
-  std::string output_dirpath = std::string() + "./result/" + output_filename + "/";
+  std::string output_dirpath = output_dirname + "/";
   
   mkdir(output_dirpath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
+  mkdir((output_dirpath + "/result/").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
 
   while (grab_frames)
   {
@@ -137,7 +139,7 @@ DEFINE_string(output_video_path, "",
 
     // save input frame to file
     std::ostringstream osInputFrame;
-    osInputFrame << output_dirpath << "/"
+    osInputFrame << output_dirpath << "/result/"
                  << "iLoop=" << iLoop << "_inputFrame.jpg";
     cv::imwrite(osInputFrame.str(), camera_frame_raw);
 
@@ -184,7 +186,7 @@ DEFINE_string(output_video_path, "",
 
       // save output frame to file
       std::ostringstream osOutputFrame;
-      osOutputFrame << output_dirpath + "/"
+      osOutputFrame << output_dirpath + "/result/"
                     << "iLoop=" << iLoop
                     << "_outputFrame.jpg";
       cv::imwrite(osOutputFrame.str(), output_frame_mat);
@@ -204,7 +206,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_detections.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "detection_"
           << "j=" << j << ".txt";
@@ -226,7 +228,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_landmarks.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "landmark_"
           << "j=" << j << ".txt";
@@ -248,7 +250,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_palm_rects.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "palmRect_"
           << "j=" << j << ".txt";
@@ -270,7 +272,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_hand_rects.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "handRect_"
           << "j=" << j << ".txt";
@@ -292,7 +294,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_hand_rects_from_landmarks.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "handRectFromLandmarks_"
           << "j=" << j << ".txt";
@@ -314,7 +316,7 @@ DEFINE_string(output_video_path, "",
       for (int j = 0; j < output_landmarks_raw.size(); j++)
       {
         std::ostringstream os;
-        os << output_dirpath + "/"
+        os << output_dirpath + "/result/"
           << "iLoop=" << iLoop << "_"
           << "landmarkRaw_"
           << "j=" << j << ".txt";
