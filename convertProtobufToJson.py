@@ -9,117 +9,68 @@ from pprint import pprint
 import json
 import sys
 
-if len(sys.argv) > 1:
-    targetDir = sys.argv[1]
-else:
-    targetDir = "./result/iPhoneXR_overshelf_scene1_short_hands8.mp4/"
 
-outputFiles = glob.glob(targetDir + "/" + "*.txt")
-
-
-detectionFiles = [(re.findall(
-    r"iLoop=(\d+)_detection_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-detectionFilesFiltered = [
-    (detectionFile[0], detectionFile[1].replace("\\", "/")) for detectionFile in detectionFiles if detectionFile[0]]
-
-landmarkFiles = [(re.findall(
-    r"iLoop=(\d+)_landmark_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-landmarkFilesFiltered = [
-    (landmarkFile[0], landmarkFile[1].replace("\\", "/")) for landmarkFile in landmarkFiles if landmarkFile[0]]
-
-handRectFiles = [(re.findall(
-    r"iLoop=(\d+)_handRect_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-handRectFilesFiltered = [
-    (handRectFile[0], handRectFile[1].replace("\\", "/")) for handRectFile in handRectFiles if handRectFile[0]]
-
-palmRectFiles = [(re.findall(
-    r"iLoop=(\d+)_palmRect_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-palmRectFilesFiltered = [
-    (palmRectFile[0], palmRectFile[1].replace("\\", "/")) for palmRectFile in palmRectFiles if palmRectFile[0]]
-
-handRectFromLandmarksFiles = [(re.findall(
-    r"iLoop=(\d+)_handRectFromLandmarks_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-handRectFromLandmarksFilesFiltered = [
-    (handRectFromLandmarksFile[0], handRectFromLandmarksFile[1].replace("\\", "/")) for handRectFromLandmarksFile in handRectFromLandmarksFiles if handRectFromLandmarksFile[0]]
-
-landmarkRawFiles = [(re.findall(
-    r"iLoop=(\d+)_landmarkRaw_j=(\d+).txt", outputFile), outputFile) for outputFile in outputFiles]
-landmarkRawFilesFiltered = [
-    (landmarkRawFile[0], landmarkRawFile[1].replace("\\", "/")) for landmarkRawFile in landmarkRawFiles if landmarkRawFile[0]]
-
-for detectionFile in detectionFilesFiltered:
-    with open(detectionFile[1], "rb") as f:
-        content = f.read()
-
-    detection = Detection()
-    detection.ParseFromString(content)
-    jsonObj = MessageToJson(detection)
-
-    detectionFileOutput = detectionFile[1].replace("txt", "json")
-    with open(detectionFileOutput, "w") as f:
-        f.write(jsonObj) 
+TYPE_INFOS = [
+    {
+        "filepath_frag": "detection",
+        "data_class": Detection,
+    },
+    {
+        "filepath_frag": "landmark",
+        "data_class": LandmarkList,
+    },
+    {
+        "filepath_frag": "handRect",
+        "data_class": NormalizedRect,
+    },
+    {
+        "filepath_frag": "palmRect",
+        "data_class": NormalizedRect,
+    },
+    {
+        "filepath_frag": "handRectFromLandmarks",
+        "data_class": NormalizedRect,
+    },
+    {
+        "filepath_frag": "landmarkRaw",
+        "data_class": LandmarkList,
+    },
+]
 
 
-for landmarkFile in landmarkFilesFiltered:
-    with open(landmarkFile[1], "rb") as f:
-        content = f.read()
+def convertFilesOfType(target_dir, type_info):
+    filepath_frag = type_info["filepath_frag"]
+    DataClass = type_info["data_class"]
 
-    landmark = LandmarkList()
-    landmark.ParseFromString(content)
-    jsonObj = MessageToJson(landmark)
+    output_files = glob.glob(target_dir + "/" + "*.txt")
 
-    landmarkFileOutput = landmarkFile[1].replace("txt", "json")
-    with open(landmarkFileOutput, "w") as f:
-        f.write(jsonObj) 
+    target_files = [(re.findall(
+        f"iLoop=(\\d+)_{filepath_frag}_j=(\\d+).txt", output_file), output_file) for output_file in output_files]
+    target_files_filtered = [
+        (target_file[0], target_file[1].replace("\\", "/")) for target_file in target_files if target_file[0]]
 
+    for target_file in target_files_filtered:
+        with open(target_file[1], "rb") as f:
+            content = f.read()
 
-for handRectFile in handRectFilesFiltered:
-    with open(handRectFile[1], "rb") as f:
-        content = f.read()
+        data = DataClass()
+        data.ParseFromString(content)
+        json_obj = MessageToJson(data)
 
-    handRect = NormalizedRect()
-    handRect.ParseFromString(content)
-    jsonObj = MessageToJson(handRect)
-
-    handRectFileOutput = handRectFile[1].replace("txt", "json")
-    with open(handRectFileOutput, "w") as f:
-        f.write(jsonObj) 
+        target_file_output = target_file[1].replace("txt", "json")
+        with open(target_file_output, "w") as f:
+            f.write(json_obj)     
 
 
-for palmRectFile in palmRectFilesFiltered:
-    with open(palmRectFile[1], "rb") as f:
-        content = f.read()
-
-    palmRect = NormalizedRect()
-    palmRect.ParseFromString(content)
-    jsonObj = MessageToJson(palmRect)
-
-    palmRectFileOutput = palmRectFile[1].replace("txt", "json")
-    with open(palmRectFileOutput, "w") as f:
-        f.write(jsonObj) 
-
-for handRectFromLandmarksFile in handRectFromLandmarksFilesFiltered:
-    with open(handRectFromLandmarksFile[1], "rb") as f:
-        content = f.read()
-
-    handRectFromLandmarks = NormalizedRect()
-    handRectFromLandmarks.ParseFromString(content)
-    jsonObj = MessageToJson(handRectFromLandmarks)
-
-    handRectFromLandmarksFileOutput = handRectFromLandmarksFile[1].replace("txt", "json")
-    with open(handRectFromLandmarksFileOutput, "w") as f:
-        f.write(jsonObj) 
-
-for landmarkRawFile in landmarkRawFilesFiltered:
-    with open(landmarkRawFile[1], "rb") as f:
-        content = f.read()
-
-    landmarkRaw = LandmarkList()
-    landmarkRaw.ParseFromString(content)
-    jsonObj = MessageToJson(landmarkRaw)
-
-    landmarkRawFileOutput = landmarkRawFile[1].replace("txt", "json")
-    with open(landmarkRawFileOutput, "w") as f:
-        f.write(jsonObj) 
+def convertFilesInDir(target_dir):
+    for type_info in TYPE_INFOS:
+        convertFilesOfType(target_dir, type_info)
 
 
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        target_dir = sys.argv[1]
+    else:
+        print("usage: python convertProtobufToJson.py PATH_TO_FOLDER")
+
+    convertFilesInDir(target_dir)
