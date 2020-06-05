@@ -8,7 +8,9 @@ from scripts import convertProtobufToJson
 
 def multi_hand_track(input_video_path, input_basename,  output_dir):
     command = " ".join([
-        f'/usr/local/bazel/2.0.0/lib/bazel/bin/bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
+        f'/usr/local/bazel/2.0.0/lib/bazel/bin/bazel build -c opt',
+        f'  --define MEDIAPIPE_DISABLE_GPU=1',
+        f'  mediapipe/examples/desktop/multi_hand_tracking:multi_hand_tracking_cpu',
     ])
     res = subprocess.run(command, stderr=subprocess.STDOUT, shell=True)
 
