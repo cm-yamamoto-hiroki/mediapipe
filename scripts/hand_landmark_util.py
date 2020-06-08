@@ -1,5 +1,6 @@
 import math
 import json
+import pandas as pd
 
 # return p0 - p1
 def subtract(p0, p1):
@@ -63,7 +64,7 @@ def bendness(wrist_point, finger_points):
     return bendness
 
 
-finger_bone_indexes = [
+FINGER_BONE_INDEXES = [
     (
         (0, i*4 + 1),
         (i*4 + 1, i*4 + 2),
@@ -83,15 +84,42 @@ def hand_info(landmark):
             )
             for bone0, bone1 in zip(finger_bones, finger_bones[1:])
         ]
-        for finger_bones in finger_bone_indexes
+        for finger_bones in FINGER_BONE_INDEXES
     ]
 
+    vectors = [
+        [
+            subtract(landmark[bone[0]], landmark[bone[1]])
+            for bone in finger_bones
+        ]
+        for finger_bones in FINGER_BONE_INDEXES
+    ]
+
+    # 指先同士の距離
     tip_distances = [
         distance(
-            # thumb, {index, middle, ring, little}
+            # thumb, {first, second, third, forth}
             landmark[4], landmark[i*4 + 8]
         )
         for i in range(4)
+    ]
+
+    # 親指先と各指の根本との距離
+    thumb_distances = [
+        distance(
+            # thumb, {first, second, third, forth}
+            landmark[4], landmark[i*4 + 5]
+        )
+        for i in range(4)
+    ]
+
+    # 親指先と各指の根本との距離
+    thumb_angle = [
+        angle(
+            # thumb, {first, second, third, forth}
+            subtract(landmark[4], landmark[5]),
+            subtract(landmark[4], landmark[17])
+        )
     ]
 
     finger_curvenesses = [
@@ -121,20 +149,45 @@ def hand_info(landmark):
         for i in range(5)
     ]
 
-    return {
+    val_dict = {
         "angles": angles,
+        "vectors": vectors,
+        "thumb_angle": thumb_angle,
+        "thumb_distances": thumb_distances,
         "tip_distances": tip_distances,
         "finger_curvenesses": finger_curvenesses,
         "finger_bendnesses": finger_bendnesses,
         "finger_lengths": finger_lengths,
     }
 
+    keys = val_dict.keys()
+    keys = sorted(keys, key=lambda x: x)
+    vals = [val_dict[key] for key in keys]
+
+    val_flatten = sum([sum(vals[0], [])] + vals[1:7] + [sum(vals[7], [])], [])
+
+    series = pd.Series(val_flatten,
+                      index=sum([
+                          [f"angle_{i}" for i in range(15)],
+                          [f"finger_bendnesses_{i}" for i in range(5)],
+                          [f"finger_curvenesses_{i}" for i in range(5)],
+                          [f"finger_lengths_{i}" for i in range(5)],
+                          [f"thumb_angle" for i in range(1)],
+                          [f"thumb_distances_{i}" for i in range(4)],
+                          [f"tip_distances_{i}" for i in range(4)],
+                          [f"vectors{i}" for i in range(20)],
+                      ], []),
+                      )
+
+    return val_dict, val_flatten, series
 
 def readLandmarkJsonFile(filepath):
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf8") as f:
+        # print(filepath)
         content = f.read()
-
+    
     landmark_json = json.loads(content)
     landmark = landmark_json["landmark"]
+
     return landmark
 
