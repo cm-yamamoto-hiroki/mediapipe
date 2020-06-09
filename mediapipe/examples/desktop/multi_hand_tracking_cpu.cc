@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 // An example of sending OpenCV webcam frames into a MediaPipe graph.
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -123,7 +124,7 @@ executeGraph(cv::Mat input_image_raw, mediapipe::CalculatorGraph *graph,
   osInputFrame << output_dirpath << "/result/"
                << "iLoop=" << iLoop << "_"
                << "inputFrame"
-               << ".jpg ";
+               << ".jpg";
   cv::imwrite(osInputFrame.str(), input_image_raw);
 
   // convert color BGR to RGB
@@ -245,15 +246,12 @@ void RunMPPGraphVideo(
     if (camera_frame_raw.empty())
       break; // End of video.
 
-    std::cerr << "camera" << std::endl;
-
     if (!load_video) {
       cv::flip(camera_frame_raw, camera_frame_raw, /*flipcode=HORIZONTAL*/ 1);
     }
     auto output_frame_mat = executeGraph(camera_frame_raw, graph, poller_video,
                                          pollers, output_dirpath, iLoop);
 
-    std::cerr << "load" << std::endl;
     if (save_video) {
       writer.write(output_frame_mat);
     } else {
@@ -263,8 +261,6 @@ void RunMPPGraphVideo(
       if (pressed_key >= 0 && pressed_key != 255)
         grab_frames = false;
     }
-
-    std::cerr << "grab" << std::endl;
 
     std::cout << std::endl;
     ++iLoop;
@@ -329,7 +325,10 @@ void RunMPPGraphVideo(
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
   mediapipe::Status status;
-  if (false) {
+  auto path = std::string(FLAGS_input_video_path);
+  auto ext = path.substr(path.find_last_of(".") + 1);
+  auto formats = std::vector<std::string>{"jpg", "png", "bmp", "tiff", "tif"};
+  if (std::find(formats.begin(), formats.end(), ext) != formats.end()) {
     RunMPPGraphImage(&graph, &poller_video, pollers, FLAGS_input_video_path,
                      output_dirpath);
   } else {
