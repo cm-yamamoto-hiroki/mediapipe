@@ -16,9 +16,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <sys/stat.h>
+#include <tuple>
 
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/detection.pb.h"
@@ -44,6 +47,59 @@ constexpr char kOutputHandRectsFromLandmarks[] =
     "multi_hand_rects_from_landmarks";
 constexpr char kOutputLandmarksRaw[] = "multi_hand_landmarks_raw";
 constexpr char kWindowName[] = "MediaPipe";
+
+typedef std::string OutputStreamName;
+typedef std::string FilepathName;
+typedef std::tuple<OutputStreamName, FilepathName,
+                   std::function<bool(mediapipe::OutputStreamPoller *, int,
+                                      FilepathName, std::string)>>
+    HandTrackingDataInfo;
+
+template <typename T>
+bool extractHandTrackingDataToFile(mediapipe::OutputStreamPoller *poller, int iLoop,
+                       FilepathName filepath, std::string output_dirpath) {
+  if (poller->QueueSize() > 0) {
+    mediapipe::Packet packet;
+    if (!poller->Next(&packet))
+      return false;
+
+    auto &output_detections = packet.Get<std::vector<T>>();
+
+    // output file
+    for (int j = 0; j < output_detections.size(); j++) {
+      std::ostringstream os;
+      os << output_dirpath + "/result/"
+         << "iLoop=" << iLoop << "_" << filepath << "_"
+         << "j=" << j << ".txt";
+      std::ofstream outputfile(os.str());
+
+      std::string serializedStr;
+      output_detections[j].SerializeToString(&serializedStr);
+      outputfile << serializedStr << std::flush;
+    }
+  }
+  return true;
+}
+
+const std::map<std::string, HandTrackingDataInfo> HAND_TRACKING_DATA_INFO{
+    {"detection",
+     {kOutputDetections, "detection", extractHandTrackingDataToFile<mediapipe::Detection>}},
+    {"landmark",
+     {kOutputDetections, "landmark",
+      extractHandTrackingDataToFile<mediapipe::NormalizedLandmarkList>}},
+    {"palm_rect",
+     {kOutputPalmRects, "palmRect",
+      extractHandTrackingDataToFile<mediapipe::NormalizedRect>}},
+    {"hand_rect",
+     {kOutputHandRects, "handRect",
+      extractHandTrackingDataToFile<mediapipe::NormalizedRect>}},
+    {"hand_rect_from_landmark",
+     {kOutputHandRectsFromLandmarks, "handRectFromLandmarks",
+      extractHandTrackingDataToFile<mediapipe::NormalizedRect>}},
+    {"landmark_raw",
+     {kOutputLandmarksRaw, "landmarkRaw",
+      extractHandTrackingDataToFile<mediapipe::LandmarkList>}},
+};
 
 DEFINE_string(
     calculator_graph_config_file, "",
@@ -108,6 +164,14 @@ DEFINE_string(output_video_path, "",
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks_raw,
                    graph.AddOutputStreamPoller(kOutputLandmarksRaw));
 
+  std::map<std::string, mediapipe::OutputStreamPoller *> pollers;
+  pollers[kOutputDetections] = &poller_detections;
+  pollers[kOutputLandmarks] = &poller_landmarks;
+  pollers[kOutputPalmRects] = &poller_palm_rects;
+  pollers[kOutputHandRects] = &poller_hand_rects;
+  pollers[kOutputHandRectsFromLandmarks] = &poller_hand_rects_from_landmarks;
+  pollers[kOutputLandmarksRaw] = &poller_landmarks_raw;
+
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
   LOG(INFO) << "Start grabbing and processing frames.";
@@ -128,11 +192,9 @@ DEFINE_string(output_video_path, "",
   while (grab_frames) {
     std::cout << "iLoop: " << iLoop
               << "-------------------------------------------------------------"
-                 "-----------------"
               << std::endl;
     std::cerr << "iLoop: " << iLoop
               << "-------------------------------------------------------------"
-                 "-----------------"
               << std::endl;
     // Capture opencv camera or video frame.
     cv::Mat camera_frame_raw;
@@ -203,145 +265,14 @@ DEFINE_string(output_video_path, "",
       break;
     }
 
-    if (poller_detections.QueueSize() > 0) {
-      mediapipe::Packet packet_detections;
-      if (!poller_detections.Next(&packet_detections))
-        break;
+    // extract hand-tracking-infos from the graph to files
+    for (auto const &[k, v] : HAND_TRACKING_DATA_INFO) {
+      auto &stream_name = std::get<0>(v);
+      auto &filepath = std::get<1>(v);
+      auto &func = std::get<2>(v);
+      auto poller = pollers[stream_name];
 
-      auto &output_detections =
-          packet_detections.Get<std::vector<mediapipe::Detection>>();
-
-      // output file
-      for (int j = 0; j < output_detections.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "detection_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_detections[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if (poller_landmarks.QueueSize() > 0) {
-      mediapipe::Packet packet_landmarks;
-      if (!poller_landmarks.Next(&packet_landmarks))
-        break;
-
-      auto &output_landmarks =
-          packet_landmarks
-              .Get<std::vector<mediapipe::NormalizedLandmarkList>>();
-
-      // output file
-      for (int j = 0; j < output_landmarks.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "landmark_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_landmarks[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if (poller_palm_rects.QueueSize() > 0) {
-      mediapipe::Packet packet_palm_rects;
-      if (!poller_palm_rects.Next(&packet_palm_rects))
-        break;
-
-      auto &output_palm_rects =
-          packet_palm_rects.Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_palm_rects.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "palmRect_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_palm_rects[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if (poller_hand_rects.QueueSize() > 0) {
-      mediapipe::Packet packet_hand_rects;
-      if (!poller_hand_rects.Next(&packet_hand_rects))
-        break;
-
-      auto &output_hand_rects =
-          packet_hand_rects.Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_hand_rects.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "handRect_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_hand_rects[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if (poller_hand_rects_from_landmarks.QueueSize() > 0) {
-      mediapipe::Packet packet_hand_rects_from_landmarks;
-      if (!poller_hand_rects_from_landmarks.Next(
-              &packet_hand_rects_from_landmarks))
-        break;
-
-      auto &output_hand_rects_from_landmarks =
-          packet_hand_rects_from_landmarks
-              .Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_hand_rects_from_landmarks.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "handRectFromLandmarks_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_hand_rects_from_landmarks[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if (poller_landmarks_raw.QueueSize() > 0) {
-      mediapipe::Packet packet_landmarks_raw;
-      if (!poller_landmarks_raw.Next(&packet_landmarks_raw))
-        break;
-
-      auto &output_landmarks_raw =
-          packet_landmarks_raw.Get<std::vector<mediapipe::LandmarkList>>();
-
-      // output file
-      for (int j = 0; j < output_landmarks_raw.size(); j++) {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-           << "iLoop=" << iLoop << "_"
-           << "landmarkRaw_"
-           << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_landmarks_raw[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
+      func(poller, iLoop, filepath, output_dirpath);
     }
 
     std::cout << std::endl;
