@@ -10,6 +10,7 @@ from pprint import pprint
 
 import hand_landmark_util
 import pose
+import pose2
 
 import cv2
 
@@ -55,10 +56,20 @@ def calcFeatures(vals):
     df = pd.DataFrame(serieses)
 
     for i in range(5):
-        df[f"angle_23_{i}"] = df[f"angle_{i*3+1}"] + df[f"angle_{i*3+2}"]
-        df[f"angle_123_{i}"] = 540 - (df[f"angle_{i*3}"] +
+        df[f"angle_0_{i}"] = 180 - df[f"angle_{i*3+0}"]
+        df[f"angle_1_{i}"] = 180 - df[f"angle_{i*3+1}"]
+        df[f"angle_2_{i}"] = 180 - df[f"angle_{i*3+2}"]
+        df[f"angle_12_{i}"] = 360 - \
+            (df[f"angle_{i*3+1}"] + df[f"angle_{i*3+2}"])
+        df[f"angle_012_{i}"] = 540 - (df[f"angle_{i*3}"] +
                                       df[f"angle_{i*3+1}"] + df[f"angle_{i*3+2}"])
     df[f"thumb_dist_sum"] = sum([df[f"thumb_distances_{i}"] for i in range(4)])
+    for i in range(3):
+        df[f"thumb_angle_{i}"] = 180 - df[f"angle_{i}"]
+    df[f"thumb_angle_{3}"] = (180 - df[f"angle_{0}"]) + \
+        (180 - df[f"angle_{1}"])
+    df[f"thumb_angle_{4}"] = (180 - df[f"angle_{1}"]) + \
+        (180 - df[f"angle_{2}"])
 
     for i in range(5):
         if i == 0:
@@ -66,7 +77,7 @@ def calcFeatures(vals):
         else:
             threshold = 100
 
-        df[f"finger_isOpen_{i}"] = df[f"angle_123_{i}"] < threshold
+        df[f"finger_isOpen_{i}"] = df[f"angle_012_{i}"] < threshold
 
     isOpen = [
         tuple(row[f"finger_isOpen_{i}"] for i in range(5))
@@ -91,19 +102,27 @@ def plotGraph(df, dirpath):
     fig, axes = plt.subplots(ncols=3, nrows=2, figsize=(20, 10), sharex=True)
     args_list = [
         # {'title': 'angles', 'column': [f"angle_{i}" for i in range(15)]},
-        # {'title': 'angles1', 'column': [f"angle_{3*i+0}" for i in range(5)]},
-        # {'title': 'angles23', 'column': [f"angle_23_{i}" for i in range(5)]},
-        {'title': 'angles123', 'column': [f"angle_123_{i}" for i in range(5)]},
-        {'title': 'thumb_dist', 'column': [
-            f"thumb_distances_{i}" for i in range(4)]},
-        {'title': 'thumb_dist_sum', 'column': ["thumb_dist_sum"]},
-        {'title': 'thumb_angle', 'column': ["thumb_angle"]},
+        {'title': 'angles1', 'column': [
+            f"angle_1_{i}" if not i == 0 else f"angle_2_{i}" for i in range(5)]},
+        {'title': 'angles2', 'column': [
+            f"angle_2_{i}" if not i == 0 else f"angle_2_{i}" for i in range(5)]},
+        {'title': 'angles12', 'column': [
+            f"angle_12_{i}" if not i == 0 else f"angle_2_{i}" for i in range(5)]},
+        {'title': 'angles0', 'column': [
+            f"angle_0_{i}" if not i == 0 else f"angle_1_{i}" for i in range(5)]},
+        # {'title': 'angles123', 'column': [f"angle_123_{i}" for i in range(5)]},
+        # {'title': 'thumb_dist', 'column': [
+        # f"thumb_distances_{i}" for i in range(5)]},
+        # {'title': 'thumb_dist_sum', 'column': ["thumb_dist_sum"]},
+        # {'title': 'thumb_angle', 'column': ["thumb_angle"]},
         # {'title': 'bend', 'column': [
         #     f"finger_bendnesses_{i}" for i in range(5)]},
         # {'title': 'curve', 'column': [
         #     f"finger_curvenesses_{i}" for i in range(5)]},
         {'title': 'tip_dist', 'column': [
-            f"tip_distances_{i}" for i in range(4)]},
+            f"tip_distances_{i}" for i in range(5)]},
+        {'title': 'thumb_angle', 'column': [
+            f"thumb_angle_{i}" for i in range(5)]},
     ]
 
     for ax, args in zip(axes.ravel(), args_list):
@@ -117,7 +136,7 @@ def plotGraph(df, dirpath):
                  f"{p.parent}/handtracked/{dirname}.png")
 
 
-def writeVideoWithPose(df, dirpath):
+def writeVideoWithHandPose(df, dirpath):
     frames = getOutputImagesFile(dirpath)
 
     output_filepath = f"{dirpath}/hand_pose.wmv".replace("\\", "/")
@@ -139,12 +158,36 @@ def writeVideoWithPose(df, dirpath):
                  f"{p.parent}/handtracked/{dirname}_hand_pose.wmv")
 
 
+def writeVideoWithHandPose2(df, dirpath):
+    frames = getOutputImagesFile(dirpath)
+
+    output_filepath = f"{dirpath}/hand_pose_2.wmv".replace("\\", "/")
+    fourcc = cv2.VideoWriter_fourcc('W', 'M', 'V', '2')
+    writer = cv2.VideoWriter(output_filepath, fourcc,
+                             30.0, (frames[0].shape[1], frames[0].shape[0]))
+
+    for i, (frame, pose) in enumerate(zip(frames, df["hand_pose_2"])):
+        cv2.putText(frame, str(pose), (100, 100), cv2.FONT_HERSHEY_SIMPLEX,
+                    2, (0, 0, 255), thickness=2, lineType=cv2.LINE_AA)
+
+        writer.write(frame)
+
+    writer.release()
+
+    p = pathlib.Path(f'{dirpath}')
+    dirname = dirpath.split("/")[-1].split("\\")[-1]
+    shutil.copy2(f"{output_filepath}",
+                 f"{p.parent}/handtracked/{dirname}_hand_pose_2.wmv")
+
+
 def recognizeHandPoseDir(dirpath):
     vals = getLandmarkRawFiles(dirpath)
     df = calcFeatures(vals)
     df.to_csv(f"{dirpath}/hand_states.csv")
     plotGraph(df, dirpath)
-    writeVideoWithPose(df, dirpath)
+    writeVideoWithHandPose(df, dirpath)
+    pose2.addHandPose2(df)
+    writeVideoWithHandPose2(df, dirpath)
 
 
 if __name__ == "__main__":
