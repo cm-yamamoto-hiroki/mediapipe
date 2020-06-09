@@ -14,11 +14,6 @@
 //
 // An example of sending OpenCV webcam frames into a MediaPipe graph.
 #include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <sys/stat.h>
-#include <cstdio>
-#include <regex>
 
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/image_frame.h"
@@ -30,18 +25,9 @@
 #include "mediapipe/framework/port/opencv_video_inc.h"
 #include "mediapipe/framework/port/parse_text_proto.h"
 #include "mediapipe/framework/port/status.h"
-#include "mediapipe/framework/formats/detection.pb.h"
-#include "mediapipe/framework/formats/landmark.pb.h"
-#include "mediapipe/framework/formats/rect.pb.h"
 
 constexpr char kInputStream[] = "input_video";
-constexpr char kOutputVideo[] = "output_video";
-constexpr char kOutputDetections[] = "multi_palm_detections";
-constexpr char kOutputLandmarks[] = "multi_hand_landmarks";
-constexpr char kOutputPalmRects[] = "multi_palm_rects";
-constexpr char kOutputHandRects[] = "multi_hand_rects";
-constexpr char kOutputHandRectsFromLandmarks[] = "multi_hand_rects_from_landmarks";
-constexpr char kOutputLandmarksRaw[] = "multi_hand_landmarks_raw";
+constexpr char kOutputStream[] = "output_video";
 constexpr char kWindowName[] = "MediaPipe";
 
 DEFINE_string(
@@ -90,58 +76,22 @@ DEFINE_string(output_video_path, "",
   }
 
   LOG(INFO) << "Start running the calculator graph.";
-  // Connect pollers to graph
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_video,
-                   graph.AddOutputStreamPoller(kOutputVideo));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_detections,
-                   graph.AddOutputStreamPoller(kOutputDetections));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks,
-                   graph.AddOutputStreamPoller(kOutputLandmarks));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_palm_rects,
-                   graph.AddOutputStreamPoller(kOutputPalmRects));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_hand_rects,
-                   graph.AddOutputStreamPoller(kOutputHandRects));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_hand_rects_from_landmarks,
-                   graph.AddOutputStreamPoller(kOutputHandRectsFromLandmarks));
-  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks_raw,
-                   graph.AddOutputStreamPoller(kOutputLandmarksRaw));
-
+  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
+                   graph.AddOutputStreamPoller(kOutputStream));
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
   LOG(INFO) << "Start grabbing and processing frames.";
   bool grab_frames = true;
-
-  int iLoop = 0;
-
-  // define output folder path
-  std::string output_dirname = FLAGS_output_video_path.substr(0, FLAGS_output_video_path.rfind("/"));
-  std::string output_filename = FLAGS_output_video_path.substr(FLAGS_output_video_path.rfind("/") + 1);
-  std::string output_dirpath = output_dirname + "/";
-  
-  mkdir(output_dirpath.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-  mkdir((output_dirpath + "/result/").c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
-
-  while (grab_frames)
-  {
-    std::cout << "iLoop: " << iLoop << "------------------------------------------------------------------------------" <<std::endl;
-    std::cerr << "iLoop: " << iLoop << "------------------------------------------------------------------------------" <<std::endl;
+  while (grab_frames) {
     // Capture opencv camera or video frame.
     cv::Mat camera_frame_raw;
     capture >> camera_frame_raw;
-    if (camera_frame_raw.empty())
-      break; // End of video.
+    if (camera_frame_raw.empty()) break;  // End of video.
     cv::Mat camera_frame;
     cv::cvtColor(camera_frame_raw, camera_frame, cv::COLOR_BGR2RGB);
-    if (!load_video)
-    {
+    if (!load_video) {
       cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
     }
-
-    // save input frame to file
-    std::ostringstream osInputFrame;
-    osInputFrame << output_dirpath << "/result/"
-                 << "iLoop=" << iLoop << "_inputFrame.jpg";
-    cv::imwrite(osInputFrame.str(), camera_frame_raw);
 
     // Wrap Mat into an ImageFrame.
     auto input_frame = absl::make_unique<mediapipe::ImageFrame>(
@@ -157,179 +107,29 @@ DEFINE_string(output_video_path, "",
         kInputStream, mediapipe::Adopt(input_frame.release())
                           .At(mediapipe::Timestamp(frame_timestamp_us))));
 
-    mediapipe::Packet packet_video;
-    if (poller_video.Next(&packet_video)){
-      // Get the graph result packet, or stop if that fails.
+    // Get the graph result packet, or stop if that fails.
+    mediapipe::Packet packet;
+    if (!poller.Next(&packet)) break;
+    auto& output_frame = packet.Get<mediapipe::ImageFrame>();
 
-      // get output from graph
-      auto &output_video = packet_video.Get<mediapipe::ImageFrame>();
-
-      // show output image
-      // Convert back to opencv for display or saving.
-      cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_video);
-      cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
-      if (save_video) {
-        if (!writer.isOpened()) {
-          LOG(INFO) << "Prepare video writer.";
-          writer.open(FLAGS_output_video_path,
-                      mediapipe::fourcc('a', 'v', 'c', '1'),  // .mp4
-                      capture.get(cv::CAP_PROP_FPS), output_frame_mat.size());
-          RET_CHECK(writer.isOpened());
-        }
-        writer.write(output_frame_mat);
-      } else {
-        cv::imshow(kWindowName, output_frame_mat);
-        // Press any key to exit.
-        const int pressed_key = cv::waitKey(5);
-        if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
+    // Convert back to opencv for display or saving.
+    cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_frame);
+    cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
+    if (save_video) {
+      if (!writer.isOpened()) {
+        LOG(INFO) << "Prepare video writer.";
+        writer.open(FLAGS_output_video_path,
+                    mediapipe::fourcc('a', 'v', 'c', '1'),  // .mp4
+                    capture.get(cv::CAP_PROP_FPS), output_frame_mat.size());
+        RET_CHECK(writer.isOpened());
       }
-
-      // save output frame to file
-      std::ostringstream osOutputFrame;
-      osOutputFrame << output_dirpath + "/result/"
-                    << "iLoop=" << iLoop
-                    << "_outputFrame.jpg";
-      cv::imwrite(osOutputFrame.str(), output_frame_mat);
-
+      writer.write(output_frame_mat);
     } else {
-      break;
+      cv::imshow(kWindowName, output_frame_mat);
+      // Press any key to exit.
+      const int pressed_key = cv::waitKey(5);
+      if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
     }
-
-
-    if(poller_detections.QueueSize() > 0){
-      mediapipe::Packet packet_detections;
-      if(!poller_detections.Next(&packet_detections)) break;
-      
-      auto &output_detections = packet_detections.Get<std::vector<mediapipe::Detection>>();
-
-      // output file
-      for (int j = 0; j < output_detections.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "detection_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_detections[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if(poller_landmarks.QueueSize() > 0){
-      mediapipe::Packet packet_landmarks;
-      if(!poller_landmarks.Next(&packet_landmarks)) break;
-      
-      auto &output_landmarks = packet_landmarks.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
-
-      // output file
-      for (int j = 0; j < output_landmarks.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "landmark_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_landmarks[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if(poller_palm_rects.QueueSize() > 0){
-      mediapipe::Packet packet_palm_rects;
-      if(!poller_palm_rects.Next(&packet_palm_rects)) break;
-      
-      auto &output_palm_rects = packet_palm_rects.Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_palm_rects.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "palmRect_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_palm_rects[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if(poller_hand_rects.QueueSize() > 0){
-      mediapipe::Packet packet_hand_rects;
-      if(!poller_hand_rects.Next(&packet_hand_rects)) break;
-      
-      auto &output_hand_rects = packet_hand_rects.Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_hand_rects.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "handRect_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_hand_rects[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if(poller_hand_rects_from_landmarks.QueueSize() > 0){
-      mediapipe::Packet packet_hand_rects_from_landmarks;
-      if(!poller_hand_rects_from_landmarks.Next(&packet_hand_rects_from_landmarks)) break;
-      
-      auto &output_hand_rects_from_landmarks = packet_hand_rects_from_landmarks.Get<std::vector<mediapipe::NormalizedRect>>();
-
-      // output file
-      for (int j = 0; j < output_hand_rects_from_landmarks.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "handRectFromLandmarks_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_hand_rects_from_landmarks[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    if(poller_landmarks_raw.QueueSize() > 0){
-      mediapipe::Packet packet_landmarks_raw;
-      if(!poller_landmarks_raw.Next(&packet_landmarks_raw)) break;
-      
-      auto &output_landmarks_raw = packet_landmarks_raw.Get<std::vector<mediapipe::LandmarkList>>();
-
-      // output file
-      for (int j = 0; j < output_landmarks_raw.size(); j++)
-      {
-        std::ostringstream os;
-        os << output_dirpath + "/result/"
-          << "iLoop=" << iLoop << "_"
-          << "landmarkRaw_"
-          << "j=" << j << ".txt";
-        std::ofstream outputfile(os.str());
-
-        std::string serializedStr;
-        output_landmarks_raw[j].SerializeToString(&serializedStr);
-        outputfile << serializedStr << std::flush;
-      }
-    }
-
-    std::cout << std::endl;
-    ++iLoop;
   }
 
   LOG(INFO) << "Shutting down.";

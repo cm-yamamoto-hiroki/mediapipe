@@ -77,3 +77,24 @@ cc_library(
         "//mediapipe/gpu:gpu_shared_data_internal",
     ],
 )
+
+# Multi Hand Tracking for CPU
+cc_library(
+    name = "multi_hand_tracking_cpu",
+    srcs = ["multi_hand_tracking_cpu.cc"],
+    deps = [
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:commandlineflags",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:opencv_highgui",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:opencv_video",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/formats:detection_cc_proto",
+        "//mediapipe/framework/formats:landmark_cc_proto",
+        "//mediapipe/framework/formats:rect_cc_proto",
+    ],
+)
