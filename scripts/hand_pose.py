@@ -145,8 +145,8 @@ def writeVideoWithHandPose(df, dirpath):
                              30.0, (frames[0].shape[1], frames[0].shape[0]))
 
     for i, (frame, pose) in enumerate(zip(frames, df["hand_pose"])):
-        cv2.putText(frame, str(pose), (100, 100), cv2.FONT_HERSHEY_SIMPLEX,
-                    2, (0, 0, 255), thickness=2, lineType=cv2.LINE_AA)
+        cv2.putText(frame, str(pose), (100, 200), cv2.FONT_HERSHEY_SIMPLEX,
+                    5, (0, 0, 255), thickness=20, lineType=cv2.LINE_AA)
 
         writer.write(frame)
 
@@ -167,8 +167,8 @@ def writeVideoWithHandPose2(df, dirpath):
                              30.0, (frames[0].shape[1], frames[0].shape[0]))
 
     for i, (frame, pose) in enumerate(zip(frames, df["hand_pose_2"])):
-        cv2.putText(frame, str(pose), (100, 100), cv2.FONT_HERSHEY_SIMPLEX,
-                    2, (0, 0, 255), thickness=2, lineType=cv2.LINE_AA)
+        cv2.putText(frame, str(pose), (100, 200), cv2.FONT_HERSHEY_SIMPLEX,
+                    5, (0, 0, 255), thickness=20, lineType=cv2.LINE_AA)
 
         writer.write(frame)
 
