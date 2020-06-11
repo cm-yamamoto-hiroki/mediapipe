@@ -88,7 +88,7 @@ const std::map<std::string, HandTrackingDataInfo> HAND_TRACKING_DATA_INFO{
      {kOutputDetections, "detection",
       extractHandTrackingDataToFile<mediapipe::Detection>}},
     {"landmark",
-     {kOutputDetections, "landmark",
+     {kOutputLandmarks, "landmark",
       extractHandTrackingDataToFile<mediapipe::NormalizedLandmarkList>}},
     {"palm_rect",
      {kOutputPalmRects, "palmRect",
