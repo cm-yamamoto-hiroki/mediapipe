@@ -12,7 +12,7 @@ output_stream: "NORM_RECTS:filtered_multi_hand_rects_for_next_frame"
 # A vector of RawLandmarks, one set per each hand.
 output_stream: "LANDMARKS_RAW:filtered_multi_hand_landmarks_raw"
 # A vector of RawLandmarks, one set per each hand.
-output_stream: "HANDEDNESSES:filtered_multi_handedness"
+output_stream: "HANDEDNESSES:filtered_multi_handednesses"
 
 # Outputs each element of multi_hand_rects at a fake timestamp for the rest
 # of the graph to process. Clones the input_video packet for each
