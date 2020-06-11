@@ -25,6 +25,7 @@
 #include <tuple>
 
 #include "mediapipe/framework/calculator_framework.h"
+#include "mediapipe/framework/formats/classification.pb.h"
 #include "mediapipe/framework/formats/detection.pb.h"
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/image_frame_opencv.h"
@@ -47,6 +48,7 @@ constexpr char kOutputHandRects[] = "multi_hand_rects";
 constexpr char kOutputHandRectsFromLandmarks[] =
     "multi_hand_rects_from_landmarks";
 constexpr char kOutputLandmarksRaw[] = "multi_hand_landmarks_raw";
+constexpr char kOutputHandednesses[] = "multi_handednesses";
 constexpr char kWindowName[] = "MediaPipe";
 
 typedef std::string OutputStreamName;
@@ -88,7 +90,7 @@ const std::map<std::string, HandTrackingDataInfo> HAND_TRACKING_DATA_INFO{
      {kOutputDetections, "detection",
       extractHandTrackingDataToFile<mediapipe::Detection>}},
     {"landmark",
-     {kOutputDetections, "landmark",
+     {kOutputLandmarks, "landmark",
       extractHandTrackingDataToFile<mediapipe::NormalizedLandmarkList>}},
     {"palm_rect",
      {kOutputPalmRects, "palmRect",
@@ -102,6 +104,9 @@ const std::map<std::string, HandTrackingDataInfo> HAND_TRACKING_DATA_INFO{
     {"landmark_raw",
      {kOutputLandmarksRaw, "landmarkRaw",
       extractHandTrackingDataToFile<mediapipe::LandmarkList>}},
+    {"handedness",
+     {kOutputHandednesses, "handedness",
+      extractHandTrackingDataToFile<mediapipe::ClassificationList>}},
 };
 
 DEFINE_string(
@@ -301,6 +306,8 @@ void RunMPPGraphVideo(
       graph.AddOutputStreamPoller(kOutputHandRectsFromLandmarks));
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_landmarks_raw,
                    graph.AddOutputStreamPoller(kOutputLandmarksRaw));
+  ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_handednesses,
+                   graph.AddOutputStreamPoller(kOutputHandednesses));
 
   std::map<std::string, mediapipe::OutputStreamPoller *> pollers;
   pollers[kOutputDetections] = &poller_detections;
@@ -309,6 +316,7 @@ void RunMPPGraphVideo(
   pollers[kOutputHandRects] = &poller_hand_rects;
   pollers[kOutputHandRectsFromLandmarks] = &poller_hand_rects_from_landmarks;
   pollers[kOutputLandmarksRaw] = &poller_landmarks_raw;
+  pollers[kOutputHandednesses] = &poller_handednesses;
 
   // define output folder path
   std::string output_dirname =

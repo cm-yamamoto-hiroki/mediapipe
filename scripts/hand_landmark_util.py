@@ -99,18 +99,18 @@ def hand_info(landmark):
     tip_distances = [
         distance(
             # thumb, {first, second, third, forth}
-            landmark[4], landmark[i*4 + 8]
+            landmark[4], landmark[i*4 + 4]
         )
-        for i in range(4)
+        for i in range(5)
     ]
 
     # 親指先と各指の根本との距離
     thumb_distances = [
         distance(
             # thumb, {first, second, third, forth}
-            landmark[4], landmark[i*4 + 5]
+            landmark[4], landmark[i*4 + 1]
         )
-        for i in range(4)
+        for i in range(5)
     ]
 
     # 親指先と各指の根本との距離
@@ -173,8 +173,8 @@ def hand_info(landmark):
                           [f"finger_curvenesses_{i}" for i in range(5)],
                           [f"finger_lengths_{i}" for i in range(5)],
                           [f"thumb_angle" for i in range(1)],
-                          [f"thumb_distances_{i}" for i in range(4)],
-                          [f"tip_distances_{i}" for i in range(4)],
+                          [f"thumb_distances_{i}" for i in range(5)],
+                          [f"tip_distances_{i}" for i in range(5)],
                           [f"vectors{i}" for i in range(20)],
                       ], []),
                       )
