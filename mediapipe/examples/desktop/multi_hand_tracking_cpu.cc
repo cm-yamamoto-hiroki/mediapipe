@@ -161,7 +161,8 @@ executeGraph(cv::Mat input_image_raw, mediapipe::CalculatorGraph *graph,
 
   // show output image
   // Convert back to opencv for display or saving.
-  cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_video);
+  auto output_frame = mediapipe::formats::MatView(&output_video);
+  auto output_frame_mat = output_frame.clone();
   cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
 
   // save output frame to file
@@ -226,8 +227,8 @@ void RunMPPGraphVideo(
     writer.open(FLAGS_output_video_path,
                 mediapipe::fourcc('a', 'v', 'c', '1'), // .mp4
                 capture.get(cv::CAP_PROP_FPS),
-                cv::Size(capture.get(cv::CAP_PROP_FRAME_HEIGHT),
-                         capture.get(cv::CAP_PROP_FRAME_WIDTH)));
+                cv::Size(capture.get(cv::CAP_PROP_FRAME_WIDTH),
+                         capture.get(cv::CAP_PROP_FRAME_HEIGHT)));
     if (!writer.isOpened()) {
       return;
     }
