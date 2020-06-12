@@ -1,3 +1,4 @@
+from mediapipe.framework.formats.classification_pb2 import ClassificationList
 from mediapipe.framework.formats.detection_pb2 import Detection
 from mediapipe.framework.formats.landmark_pb2 import LandmarkList
 from mediapipe.framework.formats.rect_pb2 import NormalizedRect
@@ -34,6 +35,10 @@ TYPE_INFOS = [
     {
         "filepath_frag": "landmarkRaw",
         "data_class": LandmarkList,
+    },
+    {
+        "filepath_frag": "handedness",
+        "data_class": ClassificationList,
     },
 ]
 
